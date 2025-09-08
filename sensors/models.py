@@ -1,8 +1,8 @@
 from django.db import models
-from mcu.models import MCU
+# from mcu.models import MCU
 class SensorData(models.Model):
     sensor_data_id = models.AutoField(primary_key=True)
-    mcu = models.ForeignKey(MCU, on_delete=models.CASCADE, related_name='sensor_data')
+    # mcu = models.ForeignKey(MCU, on_delete=models.CASCADE, related_name='sensor_data')
     temperature = models.DecimalField(max_digits=5, decimal_places=2)  
     humidity = models.DecimalField(max_digits=5, decimal_places=2)    
     timestamp = models.DateTimeField()
