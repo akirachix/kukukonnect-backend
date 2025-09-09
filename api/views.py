@@ -27,17 +27,17 @@ class UserViewSet(viewsets.ModelViewSet):
         if not user:
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         otp = generate_otp()
-        branded_sender = 'Kukukonnect <no-reply@kukukonnect.com>'
+        
         send_mail(
             subject='Kukukonnect Password Reset OTP',
             message=f'Your OTP for password reset is: {otp}',
-            from_email=branded_sender,
+            from_email='queencarineh@gmail.com',
             recipient_list=[user.email],
             fail_silently=True
         )
         cache.set(f"otp_verified_{email}", False, timeout=600)
         cache.set(f"otp_{email}", otp, timeout=600)
-        return Response({'detail': 'OTP sent to your email.', 'otp': otp}, status=status.HTTP_200_OK)
+        return Response({'detail': 'OTP sent to your email.'}, status=status.HTTP_200_OK)
 
     def verify_otp(self, request):
         email = request.data.get('email')
