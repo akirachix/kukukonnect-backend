@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'devices',
     'sensors',
+    'rest_framework',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -122,3 +124,17 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#mqtt credentials(details)
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv() 
+
+MQTT_BROKER = os.getenv("MQTT_BROKER", "broker.emqx.io")
+MQTT_PORT = int(os.getenv("MQTT_PORT", 8883))
+MQTT_USERNAME = os.getenv("MQTT_USERNAME")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
+MQTT_KEEPALIVE = int(os.getenv("MQTT_KEEPALIVE", 60))
+MQTT_TOPIC_THRESHOLD = os.getenv("MQTT_TOPIC_THRESHOLD", "esp32/thresholds")
