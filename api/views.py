@@ -49,7 +49,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         stored_otp = cache.get(f"otp_{email}")
 
-        print(f"DEBUG: stored_otp={stored_otp}, received_otp={otp}")
+       
         if stored_otp is not None:
             stored_otp = str(stored_otp).strip()
         if otp is not None:
