@@ -1,8 +1,9 @@
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from django.core.mail import send_mail
+from django.core.cache import cache
 from users.models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, generate_otp
 from users.permissions import IsAgrovetCreatingFarmer
 from rest_framework_simplejwt.tokens import RefreshToken
 import random
@@ -18,149 +19,93 @@ class UserViewSet(viewsets.ModelViewSet):
             return [IsAgrovetCreatingFarmer()]
         return []
 
-   
-    def login(self, request):
+    def forgot_password(self, request):
         email = request.data.get('email')
-        password = request.data.get('password')
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
         user = User.objects.filter(email=email).first()
-
-        if not user or not user.check_password(password):
-            return Response(
-                {'detail': 'Invalid credentials'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        if user.otp is not None and str(user.otp).strip() != '':
-            return Response(
-                {'detail': 'Please verify your OTP before logging in.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        refresh = RefreshToken.for_user(user)
-        return Response(
-            {'token': str(refresh.access_token)},
-            status=status.HTTP_200_OK
+        if not user:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        otp = generate_otp()
+        branded_sender = 'Kukukonnect <no-reply@kukukonnect.com>'
+        send_mail(
+            subject='Kukukonnect Password Reset OTP',
+            message=f'Your OTP for password reset is: {otp}',
+            from_email=branded_sender,
+            recipient_list=[user.email],
+            fail_silently=True
         )
+        cache.set(f"otp_verified_{email}", False, timeout=600)
+        cache.set(f"otp_{email}", otp, timeout=600)
+        return Response({'detail': 'OTP sent to your email.', 'otp': otp}, status=status.HTTP_200_OK)
 
-    
+    def verify_otp(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        if not email or not otp:
+            return Response({'detail': 'Email and OTP are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        stored_otp = cache.get(f"otp_{email}")
+
+        print(f"DEBUG: stored_otp={stored_otp}, received_otp={otp}")
+        if stored_otp is not None:
+            stored_otp = str(stored_otp).strip()
+        if otp is not None:
+            otp = str(otp).strip()
+        if cache.get(f"otp_verified_{email}") is None:
+            return Response({'detail': 'No OTP request found.'}, status=status.HTTP_404_NOT_FOUND)
+        if stored_otp != otp:
+            return Response({'detail': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+        cache.set(f"otp_verified_{email}", True, timeout=600)
+        return Response({'detail': 'OTP verified successfully.'}, status=status.HTTP_200_OK)
+
     def reset_password(self, request):
         email = request.data.get('email')
-        old_password = request.data.get('old_password')
         new_password = request.data.get('new_password')
         confirm_password = request.data.get('confirm_password')
-
-        if not email or not old_password or not new_password or not confirm_password:
-            return Response(
-                {'detail': 'All fields are required.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+        if not email or not new_password or not confirm_password:
+            return Response({'detail': 'Email, new password, and confirm password are required.'}, status=status.HTTP_400_BAD_REQUEST)
         user = User.objects.filter(email=email).first()
         if not user:
-            return Response(
-                {'detail': 'User not found.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not cache.get(f"otp_verified_{email}"):
+            return Response({'detail': 'OTP must be verified before resetting password.'}, status=status.HTTP_403_FORBIDDEN)
         if new_password != confirm_password:
-            return Response(
-                {'detail': 'New password and confirm password do not match.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if not user.check_password(old_password):
-            return Response(
-                {'detail': 'Old password is incorrect.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return Response({'detail': 'New password and confirm password do not match.'}, status=status.HTTP_400_BAD_REQUEST)
         if not self._validate_password(new_password):
-            return Response(
-                {'detail': 'Password must be at least 8 characters long and contain letters, numbers, and special characters.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return Response({'detail': 'Password must be at least 8 characters long and contain letters, numbers, and special characters.'}, status=status.HTTP_400_BAD_REQUEST)
         user.set_password(new_password)
         user.save()
-        return Response(
-            {'detail': 'Password reset successful.'},
-            status=status.HTTP_200_OK
-        )
+        cache.set(f"otp_verified_{email}", False, timeout=600)
+        return Response({'detail': 'Password reset successful.'}, status=status.HTTP_200_OK)
 
-    
-    def verify_otp(self, request):
-        otp = request.data.get('otp')
-        email = request.data.get('email')
-
-        if not email or not otp:
-            return Response(
-                {'detail': 'Email and OTP are required.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user = User.objects.filter(email=email).first()
-        if not user:
-            return Response(
-                {'detail': 'User not found.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        if user.otp and str(user.otp).strip() == str(otp).strip():
-            user.otp = None
-            user.save()
-            return Response(
-                {'detail': 'OTP verified successfully.'},
-                status=status.HTTP_200_OK
-            )
-
-        return Response(
-            {'detail': 'Invalid OTP.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    
     def set_password(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
-
         if not email or not password or not confirm_password:
-            return Response(
-                {'detail': 'Email, password, and confirm password are required.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return Response({'detail': 'Email, password, and confirm password are required.'}, status=status.HTTP_400_BAD_REQUEST)
         user = User.objects.filter(email=email).first()
         if not user:
-            return Response(
-                {'detail': 'User not found.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        if user.otp is not None and str(user.otp).strip() != '':
-            return Response(
-                {'detail': 'OTP must be verified before setting password.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         if password != confirm_password:
-            return Response(
-                {'detail': 'Password and confirm password do not match.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return Response({'detail': 'Password and confirm password do not match.'}, status=status.HTTP_400_BAD_REQUEST)
         if not self._validate_password(password):
-            return Response(
-                {'detail': 'Password must be at least 8 characters long and contain letters, numbers, and special characters.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return Response({'detail': 'Password must be at least 8 characters long and contain letters, numbers, and special characters.'}, status=status.HTTP_400_BAD_REQUEST)
         user.set_password(password)
         user.save()
-        return Response(
-            {'detail': 'Password set successfully.'},
-            status=status.HTTP_200_OK
-        )
+        return Response({'detail': 'Password set successfully.'}, status=status.HTTP_200_OK)
+
+    def login(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        user = User.objects.filter(email=email).first()
+        if not user or not user.check_password(password):
+            return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        refresh = RefreshToken.for_user(user)
+        return Response({'token': str(refresh.access_token)}, status=status.HTTP_200_OK)
 
     def _validate_password(self, password):
         return (

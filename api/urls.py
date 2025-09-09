@@ -16,4 +16,5 @@ urlpatterns = [
     path('reset-password/', UserViewSet.as_view({'post': 'reset_password'}), name='reset-password'),
     path('verify-otp/', UserViewSet.as_view({'post': 'verify_otp'}), name='verify-otp'),
     path('set-password/', UserViewSet.as_view({'post': 'set_password'}), name='set-password'),
+    path('forgot-password/', UserViewSet.as_view({'post': 'forgot_password'}), name='forgot-password'),
 ]

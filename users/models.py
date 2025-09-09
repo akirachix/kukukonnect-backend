@@ -30,9 +30,6 @@ class User(AbstractBaseUser):
     )
     phone_number = models.CharField(_("Phone Number"), max_length=20, unique=True)
     date_joined = models.DateTimeField(default=timezone.now)
-    is_active = models.BooleanField(default=True)
-    otp = models.CharField(max_length=5, blank=True, null=True)
-    agrovets = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='registered_farmers')
 
    
     objects = UserManager()

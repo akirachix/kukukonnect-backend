@@ -74,13 +74,12 @@ class UserModelTest(TestCase):
 		self.assertIn(response.status_code, [200, 403])  
 
 	def test_verify_otp(self):
-		self.user.otp = '12345'
-		self.user.save()
-		url = reverse('verify-otp')
-		response = self.client.post(url, {'email': self.user.email, 'otp': '12345'}, format='json')
+		url_forgot = reverse('forgot-password')
+		forgot_response = self.client.post(url_forgot, {'email': self.user.email}, format='json')
+		otp = forgot_response.data.get('otp')
+		url_verify = reverse('verify-otp')
+		response = self.client.post(url_verify, {'email': self.user.email, 'otp': otp}, format='json')
 		self.assertEqual(response.status_code, 200)
-		self.user.refresh_from_db()
-		self.assertIsNone(self.user.otp)
 
 	def test_set_password(self):
 		self.user.otp = None
@@ -96,12 +95,14 @@ class UserModelTest(TestCase):
 		self.assertTrue(self.user.check_password('NewPassword123!'))
 
 	def test_reset_password(self):
-		self.user.set_password('oldpassword123!')
-		self.user.save()
-		url = reverse('reset-password')
-		response = self.client.post(url, {
+		url_forgot = reverse('forgot-password')
+		forgot_response = self.client.post(url_forgot, {'email': self.user.email}, format='json')
+		otp = forgot_response.data.get('otp')
+		url_verify = reverse('verify-otp')
+		self.client.post(url_verify, {'email': self.user.email, 'otp': otp}, format='json')
+		url_reset = reverse('reset-password')
+		response = self.client.post(url_reset, {
 			'email': self.user.email,
-			'old_password': 'oldpassword123!',
 			'new_password': 'newpassword456!',
 			'confirm_password': 'newpassword456!'
 		}, format='json')
