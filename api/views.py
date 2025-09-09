@@ -11,13 +11,31 @@ import re
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    def list_users(self, request):
+        users = User.objects.all()
+        data = [
+            {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'phone_number': user.phone_number,
+                'user_type': user.user_type,
+            }
+            for user in users
+        ]
+        return Response({'users': data}, status=status.HTTP_200_OK)
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
     def get_permissions(self):
         if self.action == 'create':
-            return [IsAgrovetCreatingFarmer()]
-        return []
+            user_type = None
+            if self.request.method == 'POST':
+                user_type = self.request.data.get('user_type')
+            if user_type == 'Farmer':
+                return [IsAgrovetCreatingFarmer()]
+            return []
+        return super().get_permissions()
 
     def forgot_password(self, request):
         email = request.data.get('email')
