@@ -8,10 +8,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import random
 import re
 
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAgrovetCreatingFarmer]
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsAgrovetCreatingFarmer()]
+        return []
 
    
     def login(self, request):
@@ -25,7 +30,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if user.otp:
+        if user.otp is not None and str(user.otp).strip() != '':
             return Response(
                 {'detail': 'Please verify your OTP before logging in.'},
                 status=status.HTTP_403_FORBIDDEN
@@ -132,7 +137,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        if user.otp:
+        if user.otp is not None and str(user.otp).strip() != '':
             return Response(
                 {'detail': 'OTP must be verified before setting password.'},
                 status=status.HTTP_403_FORBIDDEN

@@ -1,7 +1,50 @@
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
+from users.models import User
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework.test import APIClient
 from .models import User
+
+class FarmerCreationPermissionTest(TestCase):
+	def setUp(self):
+		self.client = APIClient()
+		self.agrovet = User.objects.create(
+			username="agrovetuser",
+			email="agrovet@example.com",
+			user_type="Agrovet",
+			phone_number="0700000001"
+		)
+		self.agrovet.set_password("agrovetpass")
+		self.agrovet.save()
+		self.farmer_data = {
+			"username": "farmeruser",
+			"email": "farmer@example.com",
+			"user_type": "Farmer",
+			"phone_number": "0700000002"
+		}
+
+	def test_agrovet_can_create_farmer(self):
+		self.client.force_authenticate(user=self.agrovet)
+		url = reverse('user-list')
+		response = self.client.post(url, self.farmer_data, format='json')
+		self.assertEqual(response.status_code, 201)
+
+	def test_non_agrovet_cannot_create_farmer(self):
+		non_agrovet = User.objects.create(
+			username="otheruser",
+			email="other@example.com",
+			user_type="Farmer",
+			phone_number="0700000003"
+		)
+		non_agrovet.set_password("otherpass")
+		non_agrovet.save()
+		self.client.force_authenticate(user=non_agrovet)
+		url = reverse('user-list')
+		response = self.client.post(url, self.farmer_data, format='json')
+		self.assertEqual(response.status_code, 403)
+
 
 class UserModelTest(TestCase):
 	def setUp(self):

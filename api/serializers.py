@@ -53,14 +53,21 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        import random
+        from django.core.mail import send_mail
+        from django.conf import settings
         request = self.context.get('request')
         user_type = validated_data.get('user_type')
         password = validated_data.pop('password', None)
 
+       
+        otp = str(random.randint(100000, 999999))
+        validated_data['otp'] = otp
+
         if user_type == 'Farmer':
             if not request or not request.user.is_authenticated or request.user.user_type != 'Agrovet':
                 raise serializers.ValidationError('Only an agrovet can create a farmer.')
-        
+
         if not password and user_type != 'Farmer':
             raise serializers.ValidationError('Password is required.')
 
@@ -68,4 +75,32 @@ class UserSerializer(serializers.ModelSerializer):
         if password:
             user.set_password(password)
         user.save()
+
+       
+        branded_sender = 'Kukukonnect <no-reply@kukukonnect.com>'
+        if user.email:
+            if user.user_type == 'Agrovet':
+                send_mail(
+                    subject='Welcome to Kukukonnect',
+                    message=f'We are glad to have you onboard! Your OTP is: {otp}',
+                    from_email=branded_sender,
+                    recipient_list=[user.email],
+                    fail_silently=True
+                )
+            elif user.user_type == 'Farmer':
+                set_password_link = f'https://kukukonnect.com/set-password?email={user.email}'
+                verify_otp_link = f'https://kukukonnect.com/verify-otp?email={user.email}'
+                send_mail(
+                    subject='Welcome to Kukukonnect - OTP & Setup',
+                    message=(
+                        f'Welcome to Kukukonnect!\n'
+                        f'Your OTP is: {otp}\n'
+                        f'Set your password: {set_password_link}\n'
+                        f'Verify your OTP: {verify_otp_link}\n'
+                    ),
+                    from_email=branded_sender,
+                    recipient_list=[user.email],
+                    fail_silently=True
+                )
+
         return user
