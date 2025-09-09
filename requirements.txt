@@ -8,5 +8,5 @@ mypy-extensions==1.1.0
 packaging==25.0
 pathspec==0.12.1
 platformdirs==3.4.0
-python-dotenv==1.1.1
+python-dotenv==1.0.1
 sqlparse==0.5.3
