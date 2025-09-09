@@ -6,3 +6,4 @@ class SensorsConfig(AppConfig):
     name = 'sensors'
 def ready(self):
       start_mqtt_in_thread()
+    
