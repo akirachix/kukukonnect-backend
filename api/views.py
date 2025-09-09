@@ -4,7 +4,6 @@ from django.core.mail import send_mail
 from django.core.cache import cache
 from users.models import User
 from .serializers import UserSerializer, generate_otp
-from users.permissions import IsAgrovetCreatingFarmer
 from rest_framework_simplejwt.tokens import RefreshToken
 import random
 import re
@@ -24,18 +23,14 @@ class UserViewSet(viewsets.ModelViewSet):
             for user in users
         ]
         return Response({'users': data}, status=status.HTTP_200_OK)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     queryset = User.objects.all()
     serializer_class = UserSerializer
-
-    def get_permissions(self):
-        if self.action == 'create':
-            user_type = None
-            if self.request.method == 'POST':
-                user_type = self.request.data.get('user_type')
-            if user_type == 'Farmer':
-                return [IsAgrovetCreatingFarmer()]
-            return []
-        return super().get_permissions()
 
     def forgot_password(self, request):
         email = request.data.get('email')
@@ -43,7 +38,10 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
         user = User.objects.filter(email=email).first()
         if not user:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                'detail': 'User not found. Please register first using /api/register/.',
+                'code': 'user_not_found'
+            }, status=status.HTTP_404_NOT_FOUND)
         otp = generate_otp()
         
         send_mail(

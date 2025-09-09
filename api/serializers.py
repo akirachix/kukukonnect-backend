@@ -62,38 +62,32 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password', None)
 
         validated_data.pop('otp', None)
-
-        logger.info(f"CREATE USER: user_type={user_type}, request={request}, request.user={getattr(request, 'user', None)}")
-
         if user_type == 'Farmer':
-            if not request or not request.user.is_authenticated or request.user.user_type != 'Agrovet':
-                logger.error(f"Farmer creation blocked: request={request}, request.user={getattr(request, 'user', None)}")
-                raise serializers.ValidationError('Only an agrovet can create a farmer.')
+            user = User(**validated_data)
+            user.save()
+            if user.email:
+                set_password_link = f'https://kukukonnect-frontend.vercel.app/set-password?email={user.email}'
+                send_mail(
+                    subject='Welcome to Kukukonnect - Set Your Password',
+                    message=(
+                        f'Welcome to Kukukonnect!\n'
+                        f'Set your password: {set_password_link}\n'
+                    ),
+                    from_email="queencarineh@gmail.com",
+                    recipient_list=[user.email],
+                    fail_silently=True
+                )
+            return user
 
-        if not password and user_type != 'Farmer':
+
+        if not password:
             logger.error(f"Password required for non-farmer: validated_data={validated_data}")
             raise serializers.ValidationError('Password is required.')
 
         user = User(**validated_data)
-        if password:
-            user.set_password(password)
+        user.set_password(password)
         user.save()
-
         logger.info(f"User created: {user}")
-
-        if user.email and user.user_type == 'Farmer':
-            set_password_link = f'https://kukukonnect-frontend.vercel.app/set-password?email={user.email}'
-            send_mail(
-                subject='Welcome to Kukukonnect - Set Your Password',
-                message=(
-                    f'Welcome to Kukukonnect!\n'
-                    f'Set your password: {set_password_link}\n'
-                ),
-                from_email="queencarineh@gmail.com",
-                recipient_list=[user.email],
-                fail_silently=True
-            )
-
         return user
 
 def generate_otp():
