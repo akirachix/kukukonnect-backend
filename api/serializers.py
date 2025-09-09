@@ -1,10 +1,19 @@
 from rest_framework import serializers
+from devices.models import MCU
 
-class ThresholdSerializer(serializers.Serializer):
-    temp_threshold_min = serializers.DecimalField(max_digits=5, decimal_places=2)
-    temp_threshold_max = serializers.DecimalField(max_digits=5, decimal_places=2)
-    humidity_threshold_min = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
-    humidity_threshold_max = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
+class ThresholdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MCU
+        fields = ['temp_threshold_min', 'temp_threshold_max', 'humidity_threshold_min', 'humidity_threshold_max']
+        extra_kwargs = {
+            'humidity_threshold_min': {'required': False, 'allow_null': True},
+            'humidity_threshold_max': {'required': False, 'allow_null': True},
+        }
 
-class DeviceNameSerializer(serializers.Serializer):
-    device_name = serializers.CharField(max_length=50)
+class DeviceNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MCU
+        fields = ['device_name']
+    extra_kwargs = {
+            'device_name': {'required': False, 'allow_null': True, 'allow_blank': True},
+        }

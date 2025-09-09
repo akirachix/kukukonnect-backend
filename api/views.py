@@ -6,9 +6,7 @@ from .serializers import ThresholdSerializer, DeviceNameSerializer
 from devices.mqtt_service import mqtt_client
 from django.shortcuts import get_object_or_404
 
-
 class ThresholdView(APIView):
-
     def get(self, request, mcu_device_id=None):
         mcu = get_object_or_404(MCU, device_id=mcu_device_id)
         return Response({
@@ -21,15 +19,9 @@ class ThresholdView(APIView):
 
     def put(self, request, mcu_device_id=None):
         mcu = get_object_or_404(MCU, device_id=mcu_device_id)
-        serializer = ThresholdSerializer(data=request.data)
+        serializer = ThresholdSerializer(mcu, data=request.data, partial=True)
         if serializer.is_valid():
-            data = serializer.validated_data
-            mcu.temp_threshold_min = data.get("temp_threshold_min", mcu.temp_threshold_min)
-            mcu.temp_threshold_max = data.get("temp_threshold_max", mcu.temp_threshold_max)
-            mcu.humidity_threshold_min = data.get("humidity_threshold_min", mcu.humidity_threshold_min)
-            mcu.humidity_threshold_max = data.get("humidity_threshold_max", mcu.humidity_threshold_max)
-            mcu.save()
-
+            serializer.save()
             mqtt_client.publish_thresholds(
                 mcu_device_id,
                 float(mcu.temp_threshold_min),
@@ -40,18 +32,15 @@ class ThresholdView(APIView):
             return Response({"status": "published"})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class DeviceNameView(APIView):
-
     def get(self, request, mcu_device_id=None):
         mcu = get_object_or_404(MCU, device_id=mcu_device_id)
         return Response({"device_name": mcu.device_name})
 
     def put(self, request, mcu_device_id=None):
         mcu = get_object_or_404(MCU, device_id=mcu_device_id)
-        serializer = DeviceNameSerializer(data=request.data)
+        serializer = DeviceNameSerializer(mcu, data=request.data, partial=True)
         if serializer.is_valid():
-            mcu.device_name = serializer.validated_data['device_name']
-            mcu.save()
+            serializer.save()
             return Response({"status": "updated"})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
