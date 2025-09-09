@@ -3,12 +3,8 @@ import paho.mqtt.client as mqtt
 import ssl
 import requests
 
-BROKER = "207b716636fd44df8ca523f26d592fd9.s1.eu.hivemq.cloud"
-PORT = 8883
-USERNAME = "KukuKonnect"
-PASSWORD = "Kuku@2025"
 TOPIC = "esp32/relay_status"
-API_URL = "http://127.0.0.1:8001/api/sensor-data/"
+
 
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
