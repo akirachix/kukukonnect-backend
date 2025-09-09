@@ -9,4 +9,3 @@ class SensorData(models.Model):
 
     def __str__(self):
         return f"SensorData {self.sensor_data_id} - MCU {self.mcu.name} at {self.timestamp}"
-# Create your models here.
