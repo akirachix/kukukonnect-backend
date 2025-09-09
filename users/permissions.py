@@ -12,3 +12,4 @@ class IsAgrovetCreatingFarmer(permissions.BasePermission):
         if view.action == 'my_farmers' and request.method == 'GET':
             return user.is_authenticated and getattr(user, 'user_type', None) == 'Agrovet'
         return True
+

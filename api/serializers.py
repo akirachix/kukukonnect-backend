@@ -75,16 +75,16 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
         user.save()
 
-        branded_sender = 'Kukukonnect <no-reply@kukukonnect.com>'
         if user.email and user.user_type == 'Farmer':
             set_password_link = f'https://kukukonnect-frontend.vercel.app/set-password?email={user.email}'
+            
             send_mail(
                 subject='Welcome to Kukukonnect - Set Your Password',
                 message=(
                     f'Welcome to Kukukonnect!\n'
                     f'Set your password: {set_password_link}\n'
                 ),
-                from_email=branded_sender,
+                from_email="queencarineh@gmail.com",
                 recipient_list=[user.email],
                 fail_silently=True
             )
