@@ -79,7 +79,7 @@ class MQTTClient:
         self.client.disconnect()
 
     def publish_thresholds(self, mcu_id, temp_min, temp_max, humidity_min=None, humidity_max=None):
-        topic = f"{TOPIC_PREFIX}/thresholds"
+        topic = f"{TOPIC_PREFIX}/sensor_data"
         payload = {
             "device_id": mcu_id,
             "thresholds": {
