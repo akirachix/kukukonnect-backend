@@ -9,3 +9,13 @@ class SensorData(models.Model):
 
     def __str__(self):
         return f"SensorData {self.sensor_data_id} - MCU {self.mcu.name} at {self.timestamp}"
+class RelayStatus(models.Model):
+    device_id = models.CharField(max_length=100)
+    timestamp = models.BigIntegerField()
+    heater_relay = models.BooleanField()
+    fan_relay = models.BooleanField()
+    system_mode = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.device_id} @ {self.timestamp}"
