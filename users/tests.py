@@ -1,3 +1,4 @@
+import os
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -8,6 +9,10 @@ from rest_framework.test import APIClient
 from .models import User
 
 class FarmerCreationPermissionTest(TestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		os.environ['SET_PASSWORD_LINK'] = 'https://test-set-password-link/?email='
 	def setUp(self):
 		self.client = APIClient()
 		self.agrovet = User.objects.create(
