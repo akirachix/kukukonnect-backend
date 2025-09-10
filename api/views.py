@@ -1,132 +1,116 @@
-from rest_framework import status, viewsets
+from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import AccessToken
 from django.core.mail import send_mail
+from django.conf import settings
 from django.core.cache import cache
 from users.models import User
-from .serializers import UserSerializer, generate_otp
-from rest_framework_simplejwt.tokens import RefreshToken
 import random
-import re
+from .serializers import (
+    UserSerializer, SignupSerializer, LoginSerializer, 
+    ForgotPasswordSerializer, ResetPasswordSerializer, VerifyCodeSerializer,SetPasswordSerializer
+)
 
+class UserAPIView(generics.GenericAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
 
-class UserViewSet(viewsets.ModelViewSet):
-    def list_users(self, request):
+    def get(self, request, *args, **kwargs):
         users = User.objects.all()
-        data = [
-            {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'phone_number': user.phone_number,
-                'user_type': user.user_type,
-            }
-            for user in users
-        ]
-        return Response({'users': data}, status=status.HTTP_200_OK)
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer = self.get_serializer(users, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [AllowAny]    
 
-    def forgot_password(self, request):
-        email = request.data.get('email')
-        if not email:
-            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        user = User.objects.filter(email=email).first()
-        if not user:
-            return Response({
-                'detail': 'User not found. Please register first using /api/register/.',
-                'code': 'user_not_found'
-            }, status=status.HTTP_404_NOT_FOUND)
-        otp = generate_otp()
-        
+class SetPasswordView(generics.GenericAPIView):
+    serializer_class = SetPasswordSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Password set successfully."})    
+
+class SignupView(generics.CreateAPIView):
+    serializer_class = SignupSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        if user.user_type == 'Farmer' and user.email:
+            set_password_link = f'https://kukukonnect-frontend.vercel.app/set-password?email={user.email}'
+            farmer_name = user.first_name or user.username or "Farmer"
+            send_mail(
+                "Welcome to Kukukonnect",
+                f"Welcome to Kukukonnect {farmer_name}!\nSet your password: {set_password_link}",
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+            return Response({"message": "Registration successful. Set your password via the link sent to your email."}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Registration successful."}, status=status.HTTP_201_CREATED)
+
+class LoginView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+    permission_classes = [AllowAny]
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        access = AccessToken.for_user(user)
+        return Response({
+            "token": str(access)
+        })
+
+class ForgotPasswordView(generics.GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+    permission_classes = [AllowAny]
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        user = User.objects.get(email=email)
+        otp = random.randint(1000, 9999)
+        cache.set(f"otp_{user.id}", otp, timeout=600)
         send_mail(
-            subject='Kukukonnect Password Reset OTP',
-            message=f'Your OTP for password reset is: {otp}',
-            from_email='queencarineh@gmail.com',
-            recipient_list=[user.email],
-            fail_silently=True
+            "Your OTP Code",
+            f"Use this OTP to reset your password: {otp}",
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
         )
-        cache.set(f"otp_verified_{email}", False, timeout=600)
-        cache.set(f"otp_{email}", otp, timeout=600)
-        return Response({'detail': 'OTP sent to your email.'}, status=status.HTTP_200_OK)
+        return Response({"message": "OTP sent to your email"})
 
-    def verify_otp(self, request):
-        email = request.data.get('email')
-        otp = request.data.get('otp')
-        if not email or not otp:
-            return Response({'detail': 'Email and OTP are required.'}, status=status.HTTP_400_BAD_REQUEST)
-        user = User.objects.filter(email=email).first()
-        if not user:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        stored_otp = cache.get(f"otp_{email}")
+class VerifyCodeView(generics.GenericAPIView):
+    serializer_class = VerifyCodeSerializer
+    permission_classes = [AllowAny]
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"message": "OTP verified successfully"})
 
-       
-        if stored_otp is not None:
-            stored_otp = str(stored_otp).strip()
-        if otp is not None:
-            otp = str(otp).strip()
-        if cache.get(f"otp_verified_{email}") is None:
-            return Response({'detail': 'No OTP request found.'}, status=status.HTTP_404_NOT_FOUND)
-        if stored_otp != otp:
-            return Response({'detail': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
-        cache.set(f"otp_verified_{email}", True, timeout=600)
-        return Response({'detail': 'OTP verified successfully.'}, status=status.HTTP_200_OK)
-
-    def reset_password(self, request):
-        email = request.data.get('email')
-        new_password = request.data.get('new_password')
-        confirm_password = request.data.get('confirm_password')
-        if not email or not new_password or not confirm_password:
-            return Response({'detail': 'Email, new password, and confirm password are required.'}, status=status.HTTP_400_BAD_REQUEST)
-        user = User.objects.filter(email=email).first()
-        if not user:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        if not cache.get(f"otp_verified_{email}"):
-            return Response({'detail': 'OTP must be verified before resetting password.'}, status=status.HTTP_403_FORBIDDEN)
-        if new_password != confirm_password:
-            return Response({'detail': 'New password and confirm password do not match.'}, status=status.HTTP_400_BAD_REQUEST)
-        if not self._validate_password(new_password):
-            return Response({'detail': 'Password must be at least 8 characters long and contain letters, numbers, and special characters.'}, status=status.HTTP_400_BAD_REQUEST)
-        user.set_password(new_password)
-        user.save()
-        cache.set(f"otp_verified_{email}", False, timeout=600)
-        return Response({'detail': 'Password reset successful.'}, status=status.HTTP_200_OK)
-
-    def set_password(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-        confirm_password = request.data.get('confirm_password')
-        if not email or not password or not confirm_password:
-            return Response({'detail': 'Email, password, and confirm password are required.'}, status=status.HTTP_400_BAD_REQUEST)
-        user = User.objects.filter(email=email).first()
-        if not user:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        if password != confirm_password:
-            return Response({'detail': 'Password and confirm password do not match.'}, status=status.HTTP_400_BAD_REQUEST)
-        if not self._validate_password(password):
-            return Response({'detail': 'Password must be at least 8 characters long and contain letters, numbers, and special characters.'}, status=status.HTTP_400_BAD_REQUEST)
-        user.set_password(password)
-        user.save()
-        return Response({'detail': 'Password set successfully.'}, status=status.HTTP_200_OK)
-
-    def login(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-        user = User.objects.filter(email=email).first()
-        if not user or not user.check_password(password):
-            return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        refresh = RefreshToken.for_user(user)
-        return Response({'token': str(refresh.access_token)}, status=status.HTTP_200_OK)
-
-    def _validate_password(self, password):
-        return (
-            len(password) >= 8 and
-            re.search(r'[A-Za-z]', password) and
-            re.search(r'\d', password) and
-            re.search(r'[^A-Za-z0-9]', password)
-        )
+class ResetPasswordView(generics.GenericAPIView):
+    serializer_class = ResetPasswordSerializer
+    permission_classes = [AllowAny]
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Password has been reset successfully"})

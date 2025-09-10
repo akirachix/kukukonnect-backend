@@ -18,10 +18,11 @@ class UserManager(BaseUserManager):
         return user
 
 class User(AbstractBaseUser):
+    is_active = models.BooleanField(default=True)
     username = models.CharField(_("Username"), max_length=150, unique=True)
-    first_name = models.CharField(_("First Name"), max_length=30, blank=True)
-    last_name = models.CharField(_("Last Name"), max_length=30, blank=True)
-    email = models.EmailField(_("Email Address"), max_length=255, unique=True, blank=True, null=True)
+    first_name = models.CharField(_("First Name"), max_length=30, blank=False)
+    last_name = models.CharField(_("Last Name"), max_length=30, blank=False)
+    email = models.EmailField(_("Email Address"), max_length=255, unique=True)
     image = models.ImageField(_("Profile Image"), upload_to='profile_images/', blank=True, null=True)
     user_type = models.CharField(
         _("User Type"),
@@ -33,8 +34,8 @@ class User(AbstractBaseUser):
 
    
     objects = UserManager()
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['phone_number', 'email', 'first_name', 'last_name', 'user_type']
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['phone_number', 'username', 'first_name', 'last_name', 'user_type']
 
     def __str__(self):
         return self.username

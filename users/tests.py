@@ -22,12 +22,14 @@ class FarmerCreationPermissionTest(TestCase):
 			"username": "farmeruser",
 			"email": "farmer@example.com",
 			"user_type": "Farmer",
-			"phone_number": "0700000002"
+			"phone_number": "0700000002",
+			"first_name": "Test",
+			"last_name": "Farmer"
 		}
 
 	def test_agrovet_can_create_farmer(self):
 		self.client.force_authenticate(user=self.agrovet)
-		url = reverse('user-list')
+		url = reverse('users')
 		response = self.client.post(url, self.farmer_data, format='json')
 		self.assertEqual(response.status_code, 201)
 
@@ -41,7 +43,7 @@ class FarmerCreationPermissionTest(TestCase):
 		non_agrovet.set_password("otherpass")
 		non_agrovet.save()
 		self.client.force_authenticate(user=non_agrovet)
-		url = reverse('user-list')
+		url = reverse('users')
 		response = self.client.post(url, self.farmer_data, format='json')
 		self.assertEqual(response.status_code, 201)
 
@@ -76,9 +78,9 @@ class UserModelTest(TestCase):
 	def test_verify_otp(self):
 		url_forgot = reverse('forgot-password')
 		forgot_response = self.client.post(url_forgot, {'email': self.user.email}, format='json')
-	
 		from django.core.cache import cache
-		otp = cache.get(f"otp_{self.user.email}")
+		otp = cache.get(f"otp_{self.user.id}")
+		print(f"DEBUG: OTP for user {self.user.email} (id={self.user.id}): {otp}")
 		url_verify = reverse('verify-otp')
 		response = self.client.post(url_verify, {'email': self.user.email, 'otp': otp}, format='json')
 		self.assertEqual(response.status_code, 200)
@@ -97,18 +99,19 @@ class UserModelTest(TestCase):
 		self.assertTrue(self.user.check_password('NewPassword123!'))
 
 	def test_reset_password(self):
-			url_forgot = reverse('forgot-password')
-			self.client.post(url_forgot, {'email': self.user.email}, format='json')
-			from django.core.cache import cache
-			otp = cache.get(f"otp_{self.user.email}")
-			url_verify = reverse('verify-otp')
-			self.client.post(url_verify, {'email': self.user.email, 'otp': otp}, format='json')
-			url_reset = reverse('reset-password')
-			response = self.client.post(url_reset, {
-				'email': self.user.email,
-				'new_password': 'newpassword456!',
-				'confirm_password': 'newpassword456!'
-			}, format='json')
-			self.assertEqual(response.status_code, 200)
-			self.user.refresh_from_db()
-			self.assertTrue(self.user.check_password('newpassword456!'))
+		url_forgot = reverse('forgot-password')
+		self.client.post(url_forgot, {'email': self.user.email}, format='json')
+		from django.core.cache import cache
+		otp = cache.get(f"otp_{self.user.id}")
+		print(f"DEBUG: OTP for user {self.user.email} (id={self.user.id}): {otp}")
+		url_verify = reverse('verify-otp')
+		self.client.post(url_verify, {'email': self.user.email, 'otp': otp}, format='json')
+		url_reset = reverse('reset-password')
+		response = self.client.post(url_reset, {
+			'email': self.user.email,
+			'password': 'newpassword456!',
+			'confirm_password': 'newpassword456!'
+		}, format='json')
+		self.assertEqual(response.status_code, 200)
+		self.user.refresh_from_db()
+		self.assertTrue(self.user.check_password('newpassword456!'))
