@@ -24,6 +24,7 @@ class APIRootView(APIView):
     def get(self, request, format=None):
         return Response({
             "thresholds": reverse('thresholds-detail', args=["<device_id>"], request=request),
+             "users": reverse('users', request=request)
         })
 
 class ThresholdView(APIView):
@@ -48,12 +49,12 @@ class ThresholdView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserAPIView(generics.GenericAPIView):
-    queryset = User.objects.all()  # Required: specify queryset here
+    queryset = User.objects.all()  
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        users = self.get_queryset()  # Use get_queryset() method
+        users = self.get_queryset() 
         serializer = self.get_serializer(users, many=True)
         return Response(serializer.data)
 
