@@ -7,20 +7,18 @@ from .serializers import ThresholdSerializer
 from devices.mqtt_service import mqtt_client
 from django.shortcuts import get_object_or_404
 
-
 class APIRootView(APIView):
     def get(self, request, format=None):
         return Response({
             "thresholds": reverse('thresholds-detail', args=["<device_id>"], request=request),
         })
 
-
 class ThresholdView(APIView):
     def get(self, request, mcu_device_id=None):
         mcu = get_object_or_404(MCU, device_id=mcu_device_id)
         serializer = ThresholdSerializer(mcu)
         return Response(serializer.data)
-api/urls.py
+
     def put(self, request, mcu_device_id=None):
         mcu = get_object_or_404(MCU, device_id=mcu_device_id)
         serializer = ThresholdSerializer(mcu, data=request.data, partial=True)
