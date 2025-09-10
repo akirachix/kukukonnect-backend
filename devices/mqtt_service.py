@@ -13,8 +13,7 @@ PORT = getattr(settings, "MQTT_PORT", 8883)
 USERNAME = getattr(settings, "MQTT_USERNAME", None)
 PASSWORD = getattr(settings, "MQTT_PASSWORD", None)
 KEEPALIVE = getattr(settings, "MQTT_KEEPALIVE", 60)
-TOPIC_PREFIX = "esp32" 
-
+TOPIC_PREFIX = "esp32"
 
 class MQTTClient:
     def __init__(self):
@@ -52,6 +51,7 @@ class MQTTClient:
         print(f"Saved MCU {device_id} thresholds to DB")
 
     def on_message(self, client, userdata, msg):
+        print(f"Received MQTT message on topic {msg.topic}: {msg.payload}")
         try:
             payload = json.loads(msg.payload.decode())
             device_id = payload.get("device_id")

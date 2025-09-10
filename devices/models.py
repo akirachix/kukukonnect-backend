@@ -10,7 +10,6 @@ class MCU(models.Model):
         choices=(('chicks', 'Chicks'), ('chickens', 'Chickens')),
         default='chickens'
     )
-    device_name = models.CharField(max_length=50, blank=True, null=True)
     temp_threshold_min = models.DecimalField(max_digits=5, decimal_places=2)
     temp_threshold_max = models.DecimalField(max_digits=5, decimal_places=2)
     humidity_threshold_min = models.DecimalField(max_digits=5, decimal_places=2)
