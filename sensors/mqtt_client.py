@@ -39,6 +39,7 @@ def on_message(client, userdata, msg):
                 "heater_relay": data.get("heater_relay"),
                 "fan_relay": data.get("fan_relay"),
                 "system_mode": data.get("system_mode"),
+                "temperature": data.get("temperature"),
             }
            
             api_payload = {k: v for k, v in api_payload.items() if v is not None}

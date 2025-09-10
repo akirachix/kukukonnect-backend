@@ -15,6 +15,7 @@ class RelayStatus(models.Model):
     heater_relay = models.BooleanField()
     fan_relay = models.BooleanField()
     system_mode = models.CharField(max_length=50)
+    temperature = models.FloatField(null=True, blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
