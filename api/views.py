@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import generics, status
 from rest_framework.reverse import reverse
@@ -10,7 +11,6 @@ from django.conf import settings
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 import random
-
 from devices.models import MCU
 from devices.mqtt_service import mqtt_client
 from .serializers import (
@@ -20,21 +20,24 @@ from .serializers import (
 
 User = get_user_model()
 
-class APIRootView(APIView):
-    def get(self, request, format=None):
-        return Response({
-            "thresholds": reverse('thresholds-detail', args=["<device_id>"], request=request),
-             "users": reverse('users', request=request)
-        })
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
 
-class ThresholdView(APIView):
-    def get(self, request, mcu_device_id=None):
-        mcu = get_object_or_404(MCU, device_id=mcu_device_id)
+class ThresholdViewSet(viewsets.ViewSet):
+    def list(self, request):
+        mcus = MCU.objects.all()
+        serializer = ThresholdSerializer(mcus, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        mcu = get_object_or_404(MCU, device_id=pk)
         serializer = ThresholdSerializer(mcu)
         return Response(serializer.data)
 
-    def put(self, request, mcu_device_id=None):
-        mcu = get_object_or_404(MCU, device_id=mcu_device_id)
+    def update(self, request, pk=None):
+        mcu = get_object_or_404(MCU, device_id=pk)
         serializer = ThresholdSerializer(mcu, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -47,6 +50,14 @@ class ThresholdView(APIView):
             )
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def create(self, request, *args, **kwargs):
+        return Response({"detail": "POST method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({"detail": "DELETE method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+User = get_user_model()
 
 class UserAPIView(generics.GenericAPIView):
     queryset = User.objects.all()  
