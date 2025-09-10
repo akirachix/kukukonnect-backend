@@ -1,23 +1,71 @@
-from rest_framework import generics, status
+from rest_framework.views import APIView
+from rest_framework import viewsets
 from rest_framework.response import Response
+from rest_framework import generics, status
+from rest_framework.reverse import reverse
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import AccessToken
+from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
 from django.core.cache import cache
-from users.models import User
+from django.contrib.auth import get_user_model
 import random
+from devices.models import MCU
+from devices.mqtt_service import mqtt_client
 from .serializers import (
-    UserSerializer, SignupSerializer, LoginSerializer, 
-    ForgotPasswordSerializer, ResetPasswordSerializer, VerifyCodeSerializer,SetPasswordSerializer
+    ThresholdSerializer, UserSerializer, SignupSerializer, LoginSerializer,
+    ForgotPasswordSerializer, ResetPasswordSerializer, VerifyCodeSerializer, SetPasswordSerializer
 )
 
+User = get_user_model()
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
+
+class ThresholdViewSet(viewsets.ViewSet):
+    def list(self, request):
+        mcus = MCU.objects.all()
+        serializer = ThresholdSerializer(mcus, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        mcu = get_object_or_404(MCU, device_id=pk)
+        serializer = ThresholdSerializer(mcu)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        mcu = get_object_or_404(MCU, device_id=pk)
+        serializer = ThresholdSerializer(mcu, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            mqtt_client.publish_thresholds(
+                mcu.device_id,
+                float(mcu.temp_threshold_min),
+                float(mcu.temp_threshold_max),
+                float(mcu.humidity_threshold_min),
+                float(mcu.humidity_threshold_max)
+            )
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def create(self, request, *args, **kwargs):
+        return Response({"detail": "POST method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({"detail": "DELETE method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+User = get_user_model()
+
 class UserAPIView(generics.GenericAPIView):
+    queryset = User.objects.all()  
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        users = User.objects.all()
+        users = self.get_queryset() 
         serializer = self.get_serializer(users, many=True)
         return Response(serializer.data)
 
@@ -26,11 +74,11 @@ class UserAPIView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]    
+    permission_classes = [AllowAny]
 
 class SetPasswordView(generics.GenericAPIView):
     serializer_class = SetPasswordSerializer
@@ -40,7 +88,7 @@ class SetPasswordView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"message": "Password set successfully."})    
+        return Response({"message": "Password set successfully."})
 
 class SignupView(generics.CreateAPIView):
     serializer_class = SignupSerializer
@@ -55,7 +103,7 @@ class SignupView(generics.CreateAPIView):
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
-    
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -68,7 +116,7 @@ class LoginView(generics.GenericAPIView):
 class ForgotPasswordView(generics.GenericAPIView):
     serializer_class = ForgotPasswordSerializer
     permission_classes = [AllowAny]
-    
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -88,7 +136,7 @@ class ForgotPasswordView(generics.GenericAPIView):
 class VerifyCodeView(generics.GenericAPIView):
     serializer_class = VerifyCodeSerializer
     permission_classes = [AllowAny]
-    
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -97,7 +145,7 @@ class VerifyCodeView(generics.GenericAPIView):
 class ResetPasswordView(generics.GenericAPIView):
     serializer_class = ResetPasswordSerializer
     permission_classes = [AllowAny]
-    
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
