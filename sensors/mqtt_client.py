@@ -10,6 +10,7 @@ USERNAME = settings.MQTT_USERNAME
 PASSWORD = settings.MQTT_PASSWORD
 RELAY_TOPIC = settings.RELAY_TOPIC
 API_URL = settings.API_URL
+SENSOR_TOPIC = settings.SENSOR_TOPIC
 
 
 latest_message = None
@@ -40,6 +41,7 @@ def on_message(client, userdata, msg):
                 "fan_relay": data.get("fan_relay"),
                 "system_mode": data.get("system_mode"),
                 "temperature": data.get("temperature"),
+                "humidity": data.get("humidity"),
             }
            
             api_payload = {k: v for k, v in api_payload.items() if v is not None}

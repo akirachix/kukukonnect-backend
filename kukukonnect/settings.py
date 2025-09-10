@@ -21,6 +21,7 @@ MQTT_PORT = int(os.getenv('MQTT_PORT', 8883))
 MQTT_USERNAME = os.getenv('MQTT_USERNAME')
 MQTT_PASSWORD = os.getenv('MQTT_PASSWORD')
 RELAY_TOPIC = os.getenv('RELAY_TOPIC')
+SENSOR_TOPIC = os.getenv('SENSOR_TOPIC')
 API_URL = os.getenv('API_URL')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -136,3 +137,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

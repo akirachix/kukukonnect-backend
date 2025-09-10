@@ -17,6 +17,7 @@ class RelayStatus(models.Model):
     system_mode = models.CharField(max_length=50)
     temperature = models.FloatField(null=True, blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)
+    humidity = models.FloatField(null=True, blank=True) 
 
     def __str__(self):
         return f"{self.device_id} @ {self.timestamp}"

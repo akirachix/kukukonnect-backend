@@ -16,6 +16,7 @@ def relay_status_api(request):
                 fan_relay=data.get("fan_relay"),
                 temperature=data.get("temperature"), 
                 system_mode=data.get("system_mode"),
+                humidity=data.get("humidity"),
             )
             return JsonResponse({"status": "ok", "received": data})
         except Exception as e:
@@ -34,6 +35,7 @@ def publish_message(request):
             "fan_relay": r.fan_relay,
             "system_mode": r.system_mode,
             "temperature": r.temperature, 
+            "humidity": r.humidity, 
             "created_at": r.created_at.isoformat(),
         }
         for r in relays
