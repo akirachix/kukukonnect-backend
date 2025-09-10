@@ -50,17 +50,6 @@ class SignupView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        if user.user_type == 'Farmer' and user.email:
-            set_password_link = f'https://kukukonnect-frontend.vercel.app/set-password?email={user.email}'
-            farmer_name = user.first_name or user.username or "Farmer"
-            send_mail(
-                "Welcome to Kukukonnect",
-                f"Welcome to Kukukonnect {farmer_name}!\nSet your password: {set_password_link}",
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
-            return Response({"message": "Registration successful. Set your password via the link sent to your email."}, status=status.HTTP_201_CREATED)
         return Response({"message": "Registration successful."}, status=status.HTTP_201_CREATED)
 
 class LoginView(generics.GenericAPIView):

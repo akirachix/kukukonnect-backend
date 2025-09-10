@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.conf import settings
 import random
+import os
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
@@ -29,7 +30,10 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         
         if user.user_type == 'Farmer' and user.email:
-            set_password_link = f'https://kukukonnect-frontend.vercel.app/set-password?email={user.email}'
+            set_password_base = os.getenv('SET_PASSWORD_LINK')
+            if not set_password_base:
+                raise Exception('SET_PASSWORD_LINK environment variable is not set.')
+            set_password_link = set_password_base + user.email
             send_mail(
                 subject='Welcome to Kukukonnect - Set Your Password',
                 message=(
@@ -81,7 +85,10 @@ class SignupSerializer(serializers.ModelSerializer):
         user.save()
 
         if user.user_type == 'Farmer' and user.email:
-            set_password_link = f'https://kukukonnect-frontend.vercel.app/set-password?email={user.email}'
+            set_password_base = os.getenv('SET_PASSWORD_LINK')
+            if not set_password_base:
+                raise Exception('SET_PASSWORD_LINK environment variable is not set.')
+            set_password_link = set_password_base + user.email
             from django.conf import settings
             send_mail(
                 subject='Welcome to Kukukonnect - Set Your Password',
