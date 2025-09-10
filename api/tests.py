@@ -50,3 +50,4 @@ class ThresholdAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.mcu.refresh_from_db()
         self.assertEqual(self.mcu.device_name, "New Test Coop")
+
