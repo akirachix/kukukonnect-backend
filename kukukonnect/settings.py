@@ -131,9 +131,11 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 #mqtt credentials(details)
+import os
+from dotenv import load_dotenv
 
 from decouple import config
-API_URL_SENSOR = config('API_URL_SENSOR', default='http://default-url.com/api/sensor-data/')
+API_URL_SENSOR = os.getenv('API_URL_SENSOR', default='http://default-url.com/api/sensor-data/')
 
 import os
 from dotenv import load_dotenv
