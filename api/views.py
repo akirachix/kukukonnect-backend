@@ -11,11 +11,15 @@ from django.conf import settings
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 import random
+from django.http import JsonResponse
+from django.utils import timezone
+import json
+from sensors.models import SensorData
 from devices.models import MCU
 from devices.mqtt_service import mqtt_client
 from .serializers import (
     ThresholdSerializer, UserSerializer, SignupSerializer, LoginSerializer,
-    ForgotPasswordSerializer, ResetPasswordSerializer, VerifyCodeSerializer, SetPasswordSerializer
+    ForgotPasswordSerializer, ResetPasswordSerializer, VerifyCodeSerializer, SetPasswordSerializer,SensorDataSerializer
 )
 
 User = get_user_model()
@@ -56,7 +60,7 @@ class ThresholdViewSet(viewsets.ViewSet):
 
     def destroy(self, request, *args, **kwargs):
         return Response({"detail": "DELETE method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
+    
 User = get_user_model()
 
 class UserAPIView(generics.GenericAPIView):
@@ -151,3 +155,33 @@ class ResetPasswordView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"message": "Password has been reset successfully"})
+
+
+class SensorDataViewset(viewsets.ViewSet):
+    queryset = SensorData.objects.all().order_by('-timestamp')
+
+    def list(self, request):
+        serializer = SensorDataSerializer(self.queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        try:
+            data = request.data  
+            dt = timezone.now()
+
+            sensor_record = SensorData.objects.create(
+                temperature=data['temperature'],
+                humidity=data['humidity'],
+                timestamp=dt
+            )
+            serializer = SensorDataSerializer(sensor_record)
+            return Response({
+                'status': 'success',
+                'message': 'Sensor data recorded',
+                'data': serializer.data,
+            }, status=status.HTTP_201_CREATED)
+
+        except KeyError as e:
+            return Response({'error': f'Missing field: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

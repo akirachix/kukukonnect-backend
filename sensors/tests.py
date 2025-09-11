@@ -26,4 +26,3 @@ class SensorDataModelTest(TestCase):
         actual_str = f"SensorData {sensor_data.sensor_data_id} at {sensor_data.timestamp}"
         self.assertEqual(actual_str, expected_str)
 
-# Create your tests here.
