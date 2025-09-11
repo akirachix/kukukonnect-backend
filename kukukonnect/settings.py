@@ -148,8 +148,7 @@ SENSOR_TOPIC=os.getenv("SENSOR_TOPIC")
 
 
 RELAY_TOPIC = os.getenv('RELAY_TOPIC')
-API_URL_SENSOR = os.getenv('API_URL_SENSOR')
-
+API_URL = os.getenv('API_URL')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -177,4 +176,3 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ['true', '1', 'yes']
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-API_URL_THRESHOLDS = os.getenv("API_URL_THRESHOLDS")

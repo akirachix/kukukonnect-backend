@@ -1,20 +1,22 @@
 import json
 import paho.mqtt.client as mqtt
 from django.conf import settings
+from devices.models import MCU
 import ssl
 from asgiref.sync import async_to_sync
 from django.db import transaction
 from decimal import Decimal
-import requests
-from devices.models import MCU
+import os
+from dotenv import load_dotenv
 
+load_dotenv() 
 
-KEEPALIVE = getattr(settings, "MQTT_KEEPALIVE", 60)
-BROKER = settings.MQTT_BROKER
-PORT = settings.MQTT_PORT
-USERNAME = settings.MQTT_USERNAME
-PASSWORD = settings.MQTT_PASSWORD
-SENSOR_TOPIC = settings.SENSOR_TOPIC
+BROKER = os.getenv("MQTT_BROKER", "broker.emqx.io")
+PORT = int(os.getenv("MQTT_PORT", 8883))
+USERNAME = os.getenv("MQTT_USERNAME")
+PASSWORD = os.getenv("MQTT_PASSWORD")
+KEEPALIVE = int(os.getenv("MQTT_KEEPALIVE", 60))
+TOPIC_PREFIX = "esp32"
 
 class MQTTClient:
     def __init__(self):
@@ -30,7 +32,7 @@ class MQTTClient:
     def on_connect(self, client, userdata, flags, rc, properties=None):
         if rc == 0:
             print("MQTT Client connected successfully")
-            self.client.subscribe(f"{SENSOR_TOPIC}/#")
+            self.client.subscribe(f"{TOPIC_PREFIX}/#")
         else:
             print(f"MQTT Client failed to connect with code {rc}")
 
@@ -66,26 +68,6 @@ class MQTTClient:
                 }
                 async_to_sync(self.save_or_update_mcu)(device_id, data)
                 print(f"Updated MCU {device_id} from MQTT message")
-
-                api_payload = {
-                    "device_id": device_id,
-                    "temp_min": float(data["temp_min"]),
-                    "temp_max": float(data["temp_max"]),
-                    "humidity_min": float(data["humidity_min"]),
-                    "humidity_max": float(data["humidity_max"]),
-                }
-
-                if API_URL_THRESHOLDS:
-                    try:
-                        response = requests.post(API_URL_THRESHOLDS, json=api_payload, timeout=5)
-                        if response.status_code in [200, 201]:
-                            print("Thresholds successfully posted to external API")
-                        else:
-                            print(f"API error: {response.status_code} - {response.text}")
-                    except requests.exceptions.RequestException as e:
-                        print(f"Failed to post thresholds to API: {e}")
-                else:
-                    print("API_URL_THRESHOLDS not configured in settings.")
             else:
                 print("MQTT message missing device_id or thresholds")
         except Exception as e:
@@ -100,7 +82,7 @@ class MQTTClient:
         self.client.disconnect()
 
     def publish_thresholds(self, mcu_id, temp_min, temp_max, humidity_min=None, humidity_max=None):
-        topic = f"{SENSOR_TOPIC}"
+        topic = f"{TOPIC_PREFIX}/sensor_data"
         payload = {
             "device_id": mcu_id,
             "thresholds": {
@@ -124,3 +106,7 @@ class MQTTClient:
 
 mqtt_client = MQTTClient()
 mqtt_client.connect()
+
+
+
+
