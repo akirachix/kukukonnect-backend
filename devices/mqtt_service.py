@@ -6,13 +6,16 @@ import ssl
 from asgiref.sync import async_to_sync
 from django.db import transaction
 from decimal import Decimal
+import os
+from dotenv import load_dotenv
 
+load_dotenv() 
 
-BROKER = getattr(settings, "MQTT_BROKER", "broker.emqx.io")
-PORT = getattr(settings, "MQTT_PORT", 8883)
-USERNAME = getattr(settings, "MQTT_USERNAME", None)
-PASSWORD = getattr(settings, "MQTT_PASSWORD", None)
-KEEPALIVE = getattr(settings, "MQTT_KEEPALIVE", 60)
+BROKER = os.getenv("MQTT_BROKER", "broker.emqx.io")
+PORT = int(os.getenv("MQTT_PORT", 8883))
+USERNAME = os.getenv("MQTT_USERNAME")
+PASSWORD = os.getenv("MQTT_PASSWORD")
+KEEPALIVE = int(os.getenv("MQTT_KEEPALIVE", 60))
 TOPIC_PREFIX = "esp32"
 
 class MQTTClient:
@@ -103,3 +106,7 @@ class MQTTClient:
 
 mqtt_client = MQTTClient()
 mqtt_client.connect()
+
+
+
+

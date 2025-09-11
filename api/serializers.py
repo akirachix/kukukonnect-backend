@@ -5,8 +5,11 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.conf import settings
+from sensors.models import SensorData
+from devices.models import MCU
 import random
 import os
+
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
@@ -191,8 +194,6 @@ class ResetPasswordSerializer(serializers.Serializer):
         return user
 
 
-from rest_framework import serializers
-from devices.models import MCU
 
 class ThresholdSerializer(serializers.ModelSerializer):
     class Meta:
@@ -209,3 +210,8 @@ class ThresholdSerializer(serializers.ModelSerializer):
             'humidity_threshold_max': {'required': False, 'allow_null': True},
         }
 
+class SensorDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SensorData
+        fields = ['sensor_data_id', 'temperature', 'humidity', 'timestamp']
+        read_only_fields = ['sensor_data_id', 'timestamp']

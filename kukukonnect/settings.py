@@ -131,6 +131,11 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 #mqtt credentials(details)
+import os
+from dotenv import load_dotenv
+
+from decouple import config
+API_URL_SENSOR = os.getenv('API_URL_SENSOR', default='http://default-url.com/api/sensor-data/')
 
 import os
 from dotenv import load_dotenv
@@ -143,6 +148,12 @@ MQTT_USERNAME = os.getenv("MQTT_USERNAME")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 MQTT_KEEPALIVE = int(os.getenv("MQTT_KEEPALIVE", 60))
 MQTT_TOPIC_THRESHOLD = os.getenv("MQTT_TOPIC_THRESHOLD", "esp32/thresholds")
+SENSOR_TOPIC=os.getenv("SENSOR_TOPIC")
+
+
+
+RELAY_TOPIC = os.getenv('RELAY_TOPIC')
+API_URL = os.getenv('API_URL')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
