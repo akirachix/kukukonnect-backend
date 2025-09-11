@@ -13,7 +13,7 @@ SENSOR_TOPIC = settings.SENSOR_TOPIC
 
 
 latest_message = None
-API_URL_SENSOR ="http://127.0.0.1:8000/api/sensor-data/"
+API_URL_SENSOR =settings.API_URL_SENSOR
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
         print("Connected to MQTT Broker")
