@@ -30,8 +30,7 @@ class User(AbstractBaseUser):
     on_delete=models.SET_NULL,
     null=True,
     blank=True,
-    unique=True,
-    verbose_name=_("Device ID"),
+    verbose_name=_("Device ID")
 )
     image = models.ImageField(_("Profile Image"), upload_to='profile_images/', blank=True, null=True)
     user_type = models.CharField(
