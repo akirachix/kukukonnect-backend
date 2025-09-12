@@ -1,4 +1,5 @@
 kukuenv/
+venv/
 .env
 env/
 __pycache__/

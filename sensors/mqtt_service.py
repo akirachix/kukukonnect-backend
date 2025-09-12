@@ -14,11 +14,11 @@ API_URL_SENSOR = settings.API_URL_SENSOR
 
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
-        return("Connected to MQTT Broker")
+        print("Connected to MQTT Broker")
         client.subscribe(SENSOR_TOPIC, qos=1)
-        return(f"Subscribed to: {SENSOR_TOPIC}")
+        print(f"Subscribed to: {SENSOR_TOPIC}")
     else:
-        return(f"Connection failed with code {rc}")
+        print(f"Connection failed with code {rc}")
 
 def on_message(client, userdata, msg):
     try:
