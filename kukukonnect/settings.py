@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 import os
 load_dotenv()
 
@@ -52,6 +52,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
+
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-8pf^oqs#e#8lj@s6b&n2(8cyjlns&%eh2wstcjxv*7+1z#!zd!')
 
 CORS_ALLOW_ALL_ORIGINS = True
 
