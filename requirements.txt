@@ -16,4 +16,5 @@ platformdirs==4.3.6
 requests
 python-decouple
 drf_spectacular
+drf-spectacular-sidecar
 
