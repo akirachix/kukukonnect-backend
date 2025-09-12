@@ -3,4 +3,4 @@ kukuenv/
 env/
 __pycache__/
 *.pyc
-d
+staticfiles/
