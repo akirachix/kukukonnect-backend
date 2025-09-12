@@ -16,7 +16,7 @@ jobs:
       COL_UID: ${{ secrets.COL_UID }}
       ENV_UID: ${{ secrets.ENV_UID }}
       POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
-      base_url: https://kukukonnect-6aa0bdb81a64.herokuapp.com/api/
+  
     steps:
       - uses: actions/checkout@v4
       - name: Install Postman CLI
