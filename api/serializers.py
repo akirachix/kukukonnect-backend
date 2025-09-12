@@ -14,24 +14,46 @@ import os
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
     image = serializers.ImageField(required=False, allow_null=True)
+    device_id = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = [
             "id", "username", "first_name", "last_name", "phone_number", "email",
-            "password", "user_type", "image", "date_joined"
+            "password", "user_type", "image", "date_joined", "device_id"
         ]
         read_only_fields = ["id", "date_joined"]
+
+    def validate(self, attrs):
+        user_type = attrs.get('user_type')
+        device_id = attrs.get('device_id')
+
+        
+        if user_type == 'Farmer' and (not device_id or device_id.strip() == ''):
+            raise serializers.ValidationError({
+                'device_id': 'This field is required for Farmer users.'
+            })
     
+        if device_id and not MCU.objects.filter(device_id=device_id).exists():
+            raise serializers.ValidationError({
+                'device_id': f"The device ID '{device_id}' does not exist."
+            })
+
+        return attrs
 
     def create(self, validated_data):
+        device_id_str = validated_data.pop('device_id', None)
+        if device_id_str:
+            validated_data['device_id'] = MCU.objects.get(device_id=device_id_str)
+        else:
+            validated_data['device_id'] = None
+
         password = validated_data.pop("password", None)
         user = User(**validated_data)
-        
         if password:
             user.set_password(password)
         user.save()
-        
+
         if user.user_type == 'Farmer' and user.email:
             set_password_base = os.getenv('SET_PASSWORD_LINK')
             if not set_password_base:
@@ -49,6 +71,7 @@ class UserSerializer(serializers.ModelSerializer):
             )
         return user
 
+
 class SignupSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
         validators=[UniqueValidator(queryset=User.objects.all(), message="Username already taken.")]
@@ -65,20 +88,44 @@ class SignupSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         validators=[UniqueValidator(queryset=User.objects.all(), message="Email already registered.")]
     )
+    device_id = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
 
     class Meta:
         model = User
         fields = [
             "id", "username", "first_name", "last_name", "phone_number", "email",
-            "password", "user_type", "image", "date_joined"
+            "password", "user_type", "image", "date_joined", "device_id"
         ]
         read_only_fields = ["id", "date_joined"]
 
-    
+    def validate(self, attrs):
+        user_type = attrs.get('user_type')
+        device_id = attrs.get('device_id')
+
+        if user_type == 'Farmer' and (not device_id or device_id.strip() == ''):
+            raise serializers.ValidationError({
+                'device_id': 'This field is required for Farmer users.'
+            })
+
+        if device_id and not MCU.objects.filter(device_id=device_id).exists():
+            raise serializers.ValidationError({
+                'device_id': f"The device ID '{device_id}' does not exist."
+            })
+
+        return attrs
+
     def create(self, validated_data):
+        device_id_str = validated_data.pop('device_id', None)
+        if device_id_str:
+            validated_data['device_id'] = MCU.objects.get(device_id=device_id_str)
+        else:
+            validated_data['device_id'] = None
+
         password = validated_data.pop("password", None)
         user = User(**validated_data)
-
         if user.user_type == "Agrovet":
             if not password:
                 raise serializers.ValidationError({"password": "Password is required for Agrovets."})
@@ -108,7 +155,6 @@ class SignupSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-
     def validate(self, data):
         user = authenticate(username=data["email"], password=data["password"])
         if not user:
@@ -116,13 +162,11 @@ class LoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError("This account is inactive.")
         data["user"] = user
-        return data   
-
+        return data
 class SetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, min_length=8)
-
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
             raise serializers.ValidationError("Passwords do not match")
@@ -133,16 +177,13 @@ class SetPasswordSerializer(serializers.Serializer):
         if user.user_type != "Farmer":
             raise serializers.ValidationError("Only farmers can set their password using this endpoint.")
         return data
-
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data["email"])
         user.set_password(self.validated_data["password"])
         user.save()
-        return user     
-
+        return user
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    
     def validate_email(self, value):
         try:
             user = User.objects.get(email=value)
@@ -151,11 +192,9 @@ class ForgotPasswordSerializer(serializers.Serializer):
         otp = random.randint(1000, 9999)
         cache.set(f"otp_{user.id}", otp, timeout=600)
         return value
-
 class VerifyCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=4)
-    
     def validate(self, data):
         try:
             user = User.objects.get(email=data["email"])
@@ -166,13 +205,10 @@ class VerifyCodeSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid or expired OTP")
         cache.set(f"otp_verified_{user.id}", True, timeout=600)
         return data
-
-
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, min_length=8)
-    
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
             raise serializers.ValidationError("Passwords do not match")
@@ -184,7 +220,6 @@ class ResetPasswordSerializer(serializers.Serializer):
         if not otp_verified:
             raise serializers.ValidationError("OTP not verified. Please verify OTP before resetting password.")
         return data
-    
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data["email"])
         user.set_password(self.validated_data["password"])
@@ -192,9 +227,6 @@ class ResetPasswordSerializer(serializers.Serializer):
         cache.delete(f"otp_{user.id}")
         cache.delete(f"otp_verified_{user.id}")
         return user
-
-
-
 class ThresholdSerializer(serializers.ModelSerializer):
     class Meta:
         model = MCU
@@ -207,11 +239,13 @@ class ThresholdSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {
             'humidity_threshold_min': {'required': False, 'allow_null': True},
-            'humidity_threshold_max': {'required': False, 'allow_null': True},
+            'humidity_threshold_max': {'required': False, 'allow_null': True}
         }
 
 class SensorDataSerializer(serializers.ModelSerializer):
+    device_id = serializers.CharField(source='device_id.device_id', read_only=True)
+
     class Meta:
         model = SensorData
-        fields = ['sensor_data_id', 'temperature', 'humidity', 'timestamp']
+        fields = ['sensor_data_id', 'temperature', 'humidity', 'timestamp', 'device_id']
         read_only_fields = ['sensor_data_id', 'timestamp']

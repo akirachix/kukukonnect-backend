@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from devices.models import MCU
+
 
 USER_TYPE_CHOICES = [
     ('Farmer', 'Farmer'),
@@ -23,6 +25,14 @@ class User(AbstractBaseUser):
     first_name = models.CharField(_("First Name"), max_length=30, blank=False)
     last_name = models.CharField(_("Last Name"), max_length=30, blank=False)
     email = models.EmailField(_("Email Address"), max_length=255, unique=True)
+    device_id = models.ForeignKey(
+    MCU,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    unique=True,
+    verbose_name=_("Device ID"),
+)
     image = models.ImageField(_("Profile Image"), upload_to='profile_images/', blank=True, null=True)
     user_type = models.CharField(
         _("User Type"),
