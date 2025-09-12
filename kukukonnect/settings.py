@@ -8,16 +8,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 from pathlib import Path
+from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 # SECURITY WARNING: keep the secret key used in production secret!
 
-
-
-from dotenv import load_dotenv
 import os
+import dj_database_url
+from dotenv import load_dotenv
+from decouple import config
 load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -36,6 +37,7 @@ INSTALLED_APPS = [
     'devices',
     'sensors',
     'rest_framework',
+    'corsheaders',
     'api',
     'drf_spectacular',
     'drf_spectacular_sidecar'
@@ -75,12 +77,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'kukukonnect.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+
+DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"))}
+if not os.getenv("DATABASE_URL"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
 # Use custom user model
 AUTH_USER_MODEL = 'users.User'
 # Password validation
@@ -116,15 +121,7 @@ STATICFILES_DIRS = (
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-#mqtt credentials(details)
-import os
-from dotenv import load_dotenv
-from decouple import config
 API_URL_SENSOR = os.getenv('API_URL_SENSOR', default='http://default-url.com/api/sensor-data/')
-import os
-from dotenv import load_dotenv
-load_dotenv()
 MQTT_BROKER = os.getenv("MQTT_BROKER", "broker.emqx.io")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 8883))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME")
@@ -155,16 +152,12 @@ SPECTACULAR_SETTINGS = {
 
 
 }
-from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=365*100),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=365*100),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
 }
-from dotenv import load_dotenv
-load_dotenv()
-import os
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
