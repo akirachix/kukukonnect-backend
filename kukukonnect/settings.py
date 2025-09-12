@@ -18,7 +18,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 import os
 from dotenv import load_dotenv
 from pathlib import Path
-import dj_database_url
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 'yes']
 load_dotenv()
