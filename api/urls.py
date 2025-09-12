@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import  UserViewSet, ThresholdViewSet, SensorDataViewset
 from .views import SignupView, LoginView, ResetPasswordView, VerifyCodeView, ForgotPasswordView, SetPasswordView, UserAPIView, UserDetailView
-
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 router = DefaultRouter()
 router.register(r'thresholds', ThresholdViewSet, basename='thresholds')
 router.register(r'users', UserViewSet, basename='users')
@@ -22,6 +22,11 @@ urlpatterns = [
     path('set-password/', SetPasswordView.as_view(), name='set-password'),
     path('thresholds/<str:mcu_device_id>/', ThresholdViewSet.as_view({'get': 'retrieve'}), name='thresholds-detail'),
     path('sensor-data/', SensorDataViewset.as_view({'post': 'post'}), name='sensor-data'),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
     
    
 ]
+
