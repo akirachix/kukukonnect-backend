@@ -14,13 +14,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 # SECURITY WARNING: keep the secret key used in production secret!
 
-from dotenv import load_dotenv, find_dotenv
+
 import os
-load_dotenv(find_dotenv())
-SECRET_KEY = os.getenv('SECRET_KEY')
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG =False
-ALLOWED_HOSTS = ["kukukonnect.herokuapp.com", "127.0.0.1"]
+from dotenv import load_dotenv
+from pathlib import Path
+import dj_database_url
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 'yes']
+load_dotenv()
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-insecure-key-for-dev-only')
+DEBUG = False
+ALLOWED_HOSTS = ["*"]
+
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
