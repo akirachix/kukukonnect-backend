@@ -15,17 +15,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 
 
+
+from dotenv import load_dotenv, find_dotenv
 import os
-from dotenv import load_dotenv
-from pathlib import Path
-load_dotenv(os.path.join(BASE_DIR, '.env'))
-DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 'yes']
-load_dotenv()
-SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-insecure-key-for-dev-only')
-DEBUG = False
+load_dotenv
+SECRET_KEY = os.getenv('SECRET_KEY')
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG =False
 ALLOWED_HOSTS = ["*"]
-
-
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -97,7 +94,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    },    
 ]
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -108,7 +105,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATIC_URL = '/static/'
+STATIC_URL = '/static/'  
 
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
