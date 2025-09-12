@@ -1,0 +1,1 @@
+web: gunicorn kukukonnect.wsgi --log-file -

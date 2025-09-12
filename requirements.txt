@@ -17,4 +17,7 @@ requests
 python-decouple
 drf_spectacular
 drf-spectacular-sidecar
+whitenoise==6.7.0
+gunicorn==23.0.0
+django-cors-headers==4.4.0
 
