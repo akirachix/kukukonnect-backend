@@ -113,7 +113,8 @@ STATICFILES_DIRS = (
 )
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoCORS_ALLOW_ALL_ORIGINS = TrueField'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 #mqtt credentials(details)
 import os
 from dotenv import load_dotenv
