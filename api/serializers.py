@@ -166,10 +166,7 @@ class LoginSerializer(serializers.Serializer):
 class SetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
-    confirm_password = serializers.CharField(write_only=True, min_length=8)
     def validate(self, data):
-        if data["password"] != data["confirm_password"]:
-            raise serializers.ValidationError("Passwords do not match")
         try:
             user = User.objects.get(email=data["email"])
         except User.DoesNotExist:
@@ -182,6 +179,7 @@ class SetPasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data["password"])
         user.save()
         return user
+    
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     def validate_email(self, value):
@@ -192,6 +190,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
         otp = random.randint(1000, 9999)
         cache.set(f"otp_{user.id}", otp, timeout=600)
         return value
+    
 class VerifyCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=4)
@@ -205,13 +204,11 @@ class VerifyCodeSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid or expired OTP")
         cache.set(f"otp_verified_{user.id}", True, timeout=600)
         return data
+    
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
-    confirm_password = serializers.CharField(write_only=True, min_length=8)
     def validate(self, data):
-        if data["password"] != data["confirm_password"]:
-            raise serializers.ValidationError("Passwords do not match")
         try:
             user = User.objects.get(email=data["email"])
         except User.DoesNotExist:
@@ -227,6 +224,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         cache.delete(f"otp_{user.id}")
         cache.delete(f"otp_verified_{user.id}")
         return user
+    
 class ThresholdSerializer(serializers.ModelSerializer):
     class Meta:
         model = MCU
