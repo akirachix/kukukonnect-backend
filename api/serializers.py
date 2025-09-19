@@ -166,6 +166,14 @@ class LoginSerializer(serializers.Serializer):
 class SetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
+    def validate(self, data):
+        try:
+            user = User.objects.get(email=data["email"])
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist.")
+        if user.user_type != "Farmer":
+            raise serializers.ValidationError("Only farmers can set their password using this endpoint.")
+        return data
     def save(self, **kwargs):
         user = User.objects.get(email=self.validated_data["email"])
         user.set_password(self.validated_data["password"])
