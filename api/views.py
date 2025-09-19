@@ -85,10 +85,12 @@ class UserAPIView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+
 class SetPasswordView(generics.GenericAPIView):
     serializer_class = SetPasswordSerializer
     permission_classes = [AllowAny]
@@ -97,6 +99,7 @@ class SetPasswordView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"message": "Password set successfully."})
+    
 class SignupView(generics.CreateAPIView):
     serializer_class = SignupSerializer
     permission_classes = [AllowAny]
@@ -105,6 +108,7 @@ class SignupView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response({"message": "Registration successful."}, status=status.HTTP_201_CREATED)
+    
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
@@ -113,9 +117,12 @@ class LoginView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         access = AccessToken.for_user(user)
+        user_data = UserSerializer(user).data
         return Response({
-            "token": str(access)
+            "token": str(access),
+            "user": user_data
         })
+    
 class ForgotPasswordView(generics.GenericAPIView):
     serializer_class = ForgotPasswordSerializer
     permission_classes = [AllowAny]
@@ -134,6 +141,7 @@ class ForgotPasswordView(generics.GenericAPIView):
             fail_silently=False,
         )
         return Response({"message": "OTP sent to your email"})
+    
 class VerifyCodeView(generics.GenericAPIView):
     serializer_class = VerifyCodeSerializer
     permission_classes = [AllowAny]
@@ -141,6 +149,7 @@ class VerifyCodeView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({"message": "OTP verified successfully"})
+    
 class ResetPasswordView(generics.GenericAPIView):
     serializer_class = ResetPasswordSerializer
     permission_classes = [AllowAny]
