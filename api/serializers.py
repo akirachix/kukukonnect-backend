@@ -15,7 +15,6 @@ class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
     image = serializers.ImageField(required=False, allow_null=True)
     device_id = serializers.CharField(required=False, allow_blank=True)
-
     class Meta:
         model = User
         fields = [
@@ -25,20 +24,19 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "date_joined"]
 
     def validate(self, attrs):
-        user_type = attrs.get('user_type')
-        device_id = attrs.get('device_id')
-
+        user_type = attrs.get('user_type', self.instance.user_type if self.instance else None)
+        device_id_str = attrs.get('device_id', self.instance.device_id.device_id if self.instance and self.instance.device_id else None)
         
-        if user_type == 'Farmer' and (not device_id or device_id.strip() == ''):
+        if user_type == 'Farmer' and (not device_id_str or device_id_str.strip() == ''):
             raise serializers.ValidationError({
                 'device_id': 'This field is required for Farmer users.'
             })
     
-        if device_id and not MCU.objects.filter(device_id=device_id).exists():
+        if device_id_str and not MCU.objects.filter(device_id=device_id_str).exists():
             raise serializers.ValidationError({
-                'device_id': f"The device ID '{device_id}' does not exist."
+                'device_id': f"The device ID '{device_id_str}' does not exist."
             })
-
+        
         return attrs
 
     def create(self, validated_data):
@@ -70,6 +68,28 @@ class UserSerializer(serializers.ModelSerializer):
                 fail_silently=True
             )
         return user
+
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        if password:
+            instance.set_password(password)
+
+        device_id_str = validated_data.pop('device_id', None)
+        if device_id_str:
+            instance.device_id = MCU.objects.get(device_id=device_id_str)
+        elif device_id_str is not None:   
+            instance.device_id = None
+        elif 'device_id' not in self.initial_data:
+             pass
+        else:
+            instance.device_id = None
+            
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -190,7 +210,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
         otp = random.randint(1000, 9999)
         cache.set(f"otp_{user.id}", otp, timeout=600)
         return value
-    
+  
 class VerifyCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=4)
@@ -204,7 +224,7 @@ class VerifyCodeSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid or expired OTP")
         cache.set(f"otp_verified_{user.id}", True, timeout=600)
         return data
-    
+  
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
@@ -224,7 +244,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         cache.delete(f"otp_{user.id}")
         cache.delete(f"otp_verified_{user.id}")
         return user
-    
+  
 class ThresholdSerializer(serializers.ModelSerializer):
     class Meta:
         model = MCU
