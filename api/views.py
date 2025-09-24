@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework import viewsets
 from rest_framework.response import Response
-from rest_framework import generics, status
+from rest_framework import generics, status, parsers
 from rest_framework.reverse import reverse
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import AccessToken
@@ -26,8 +26,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
-    
-
+    parser_classes = (parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser)
 class ThresholdViewSet(viewsets.ViewSet):
     def list(self, request):
         mcus = MCU.objects.all()
@@ -76,6 +75,7 @@ class UserAPIView(generics.GenericAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+    parser_classes = (parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser)
     def get(self, request, *args, **kwargs):
         users = self.get_queryset()
         serializer = self.get_serializer(users, many=True)
@@ -90,6 +90,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+    parser_classes = (parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser)
 
 class SetPasswordView(generics.GenericAPIView):
     serializer_class = SetPasswordSerializer

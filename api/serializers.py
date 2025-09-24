@@ -69,7 +69,6 @@ class UserSerializer(serializers.ModelSerializer):
             )
         return user
 
-
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
         if password:
@@ -78,13 +77,12 @@ class UserSerializer(serializers.ModelSerializer):
         device_id_str = validated_data.pop('device_id', None)
         if device_id_str:
             instance.device_id = MCU.objects.get(device_id=device_id_str)
-        elif device_id_str is not None:   
+        elif 'device_id' in validated_data and validated_data['device_id'] is None:
             instance.device_id = None
-        elif 'device_id' not in self.initial_data:
-             pass
-        else:
-            instance.device_id = None
-            
+
+        if 'image' in validated_data:
+            instance.image = validated_data['image']
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         
