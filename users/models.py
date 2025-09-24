@@ -32,7 +32,7 @@ class User(AbstractBaseUser):
     blank=True,
     verbose_name=_("Device ID")
 )
-    image = models.ImageField(_("Profile Image"), upload_to='profile_images/', blank=True, null=True)
+    image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
     user_type = models.CharField(
         _("User Type"),
         max_length=20,
